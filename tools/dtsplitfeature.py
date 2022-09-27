@@ -191,9 +191,6 @@ class DtSplitFeature(DtSingleEditTool):
 
                 newFeatures = dtutils.dtMakeFeaturesFromGeometries(self.editLayer, aFeat, newGeoms)
                 featuresToAdd = featuresToAdd + newFeatures
-                # Store the predecessor id in the feature
-                # for feature in featuresToAdd:
-                #    feature["sm_predecessors"] = f"{anId}"
 
             aFeat.setGeometry(keepGeom)
             featuresToKeep[anId] = aFeat

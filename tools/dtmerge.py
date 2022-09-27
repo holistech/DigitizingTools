@@ -120,8 +120,8 @@ class DtMerge(DtSingleButton):
                 scope = QgsExpressionContextScope()
                 scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_operation", 2))
                 scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_predecessors", f"{idList}"))
-                scope.addVariable(
-                    QgsExpressionContextScope.StaticVariable("sm_operation_date", str(datetime.datetime.now())))
+                scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_operation_date",
+                                                                           str(datetime.datetime.now())))
                 context.appendScope(scope)
                 # Activate the values with expressions like this:
                 #  CASE WHEN @sm_operation = 1 OR @sm_operation = 2 THEN @sm_predecessors ELSE sm_predecessors END
