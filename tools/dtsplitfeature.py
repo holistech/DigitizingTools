@@ -180,8 +180,10 @@ class DtSplitFeature(DtSingleEditTool):
                 scope = QgsExpressionContextScope()
                 scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_operation", 1))
                 scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_predecessors", f"{anId}"))
-                scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_operation_date", dtNow))
+                scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_operation_date", str(dtNow)))
                 context.appendScope(scope)
+                # Activate the values with expressions like this:
+                #  CASE WHEN @sm_operation = 1 OR @sm_operation = 2 THEN @sm_predecessors ELSE sm_predecessors END
 
                 for i in range(len(aFeat.attributes())):
                     if self.editLayer.defaultValueDefinition(i):

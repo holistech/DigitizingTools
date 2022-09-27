@@ -106,15 +106,31 @@ class DtMerge(DtSingleButton):
             if not self.geometryTypeMatchesLayer(processLayer, outGeom):
                 self.iface.messageBar().pushCritical("DigitizingTools",
                                                      QtWidgets.QApplication.translate("DigitizingTools",
-                                                                                      "The geometry type of the result is not valid in this layer!"))
+                                                                                      "The geometry type of the result "
+                                                                                      "is not valid in this layer!"))
                 processLayer.destroyEditCommand()
             else:
                 processLayer.removeSelection()
                 idList = ",".join([str(key) for key in featDict.keys()])
+
+                context = QgsExpressionContextUtils.createFeatureBasedContext(aFeat, processLayer.fields())
+                global_scope = QgsExpressionContextUtils.globalProjectLayerScopes(processLayer)
+                context.appendScopes(global_scope)
+
+                scope = QgsExpressionContextScope()
+                scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_operation", 2))
+                scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_predecessors", f"{idList}"))
+                scope.addVariable(
+                    QgsExpressionContextScope.StaticVariable("sm_operation_date", str(datetime.datetime.now())))
+                context.appendScope(scope)
+                # Activate the values with expressions like this:
+                #  CASE WHEN @sm_operation = 1 OR @sm_operation = 2 THEN @sm_predecessors ELSE sm_predecessors END
+
                 outFeat.setGeometry(outGeom)
-                outFeat["sm_predecessors"] = idList
-                outFeat["sm_type"] = 2
-                outFeat["sm_date"] = datetime.datetime.now()
+                for i in range(len(outFeat.attributes())):
+                    if processLayer.defaultValueDefinition(i):
+                        outFeat[i] = processLayer.defaultValue(i, outFeat, context)
+
                 success = processLayer.updateFeature(outFeat)
 
                 for aFid in fidsToDelete:
