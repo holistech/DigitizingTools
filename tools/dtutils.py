@@ -24,14 +24,16 @@ the Free Software Foundation; either version 2 of the License, or
 
 from builtins import range
 from builtins import str
-from qgis.PyQt import QtCore,  QtGui, QtWidgets
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.core import *
 from qgis.gui import *
 
-def debug(msg):
-    QtWidgets.QMessageBox.information(None, "debug",  str(msg))
 
-def dtGetFeatureForId(layer,  fid):
+def debug(msg):
+    QtWidgets.QMessageBox.information(None, "debug", str(msg))
+
+
+def dtGetFeatureForId(layer, fid):
     '''Function that returns the QgsFeature with FeatureId *fid* in QgsVectorLayer *layer*'''
     feat = QgsFeature()
 
@@ -40,14 +42,15 @@ def dtGetFeatureForId(layer,  fid):
     else:
         return None
 
-def dtCopyFeature(layer, srcFeature = None,   srcFid = None):
+
+def dtCopyFeature(layer, srcFeature=None, srcFid=None):
     '''Copy the QgsFeature with FeatureId *srcFid* in *layer* and return it. Alternatively the
     source Feature can be given as paramter. The feature is not added to the layer!'''
     if srcFid != None:
-        srcFeature = dtGetFeatureForId(layer,  srcFid)
+        srcFeature = dtGetFeatureForId(layer, srcFid)
 
     if srcFeature:
-        #get layer type
+        # get layer type
         layerType = layer.geometryType()
 
         if layerType == 0:
@@ -57,10 +60,10 @@ def dtCopyFeature(layer, srcFeature = None,   srcFid = None):
         elif layerType == 2:
             dummyGeomTxt = 'Polygon()'
 
-        #set dummy geom
+        # set dummy geom
         dummyGeom = QgsGeometry.fromWkt(dummyGeomTxt)
 
-        #copy the attribute values
+        # copy the attribute values
         attributes = {i: v for i, v in enumerate(srcFeature.attributes())}
 
         newFeature = QgsVectorLayerUtils.createFeature(layer, dummyGeom, attributes)
@@ -69,39 +72,42 @@ def dtCopyFeature(layer, srcFeature = None,   srcFid = None):
     else:
         return None
 
-def dtMakeFeaturesFromGeometries(layer,  srcFeat,  geometries):
+
+def dtMakeFeaturesFromGeometries(layer, srcFeat, geometries):
     '''create new features from geometries and copy attributes from srcFeat'''
     newFeatures = []
 
     for aGeom in geometries:
-        newFeat = dtCopyFeature(layer,  srcFeat)
+        newFeat = dtCopyFeature(layer, srcFeat)
         newFeat.setGeometry(aGeom)
         newFeatures.append(newFeat)
 
     return newFeatures
 
-def dtGetVectorLayersByType(iface,  geomType = None,  skipActive = False):
+
+def dtGetVectorLayersByType(iface, geomType=None, skipActive=False):
     '''Returns a dict of layers [name: id] in the project for the given
     *geomType*; geomTypes are 0: point, 1: line, 2: polygon
     If *skipActive* is True the active Layer is not included.'''
     layerList = {}
     for anId, aLayer in QgsProject.instance().mapLayers().items():
-        if 0 == aLayer.type():   # vectorLayer
-            if  skipActive and (iface.mapCanvas().currentLayer().id() == anId):
+        if 0 == aLayer.type():  # vectorLayer
+            if skipActive and (iface.mapCanvas().currentLayer().id() == anId):
                 continue
             else:
                 if geomType:
-                    if isinstance(geomType,  int):
+                    if isinstance(geomType, int):
                         if aLayer.geometryType() == geomType:
-                            layerList[aLayer.name()] =  [anId,  aLayer]
+                            layerList[aLayer.name()] = [anId, aLayer]
                     else:
-                        layerList[aLayer.name()] =  [anId,  aLayer]
+                        layerList[aLayer.name()] = [anId, aLayer]
     return layerList
 
-def dtChooseVectorLayer(iface, geomType = None,   skipActive = True,  msg = None):
+
+def dtChooseVectorLayer(iface, geomType=None, skipActive=True, msg=None):
     '''Offers a QInputDialog where the user can choose a Layer of type *geomType*.
     If *skipActive* is True the active Layer can not be chosen. *msg* is displayed as the dialog's message.'''
-    layerList = dtGetVectorLayersByType(iface,  geomType,  skipActive)
+    layerList = dtGetVectorLayersByType(iface, geomType, skipActive)
     chooseFrom = []
     retValue = None
 
@@ -112,95 +118,104 @@ def dtChooseVectorLayer(iface, geomType = None,   skipActive = True,  msg = None
         if not msg:
             msg = ""
 
-        selectedLayer,  ok = QtWidgets.QInputDialog.getItem(None,
-            QtWidgets.QApplication.translate("dtutils",  "Choose Layer"),
-            msg,  chooseFrom,  editable = False)
+        selectedLayer, ok = QtWidgets.QInputDialog.getItem(None,
+                                                           QtWidgets.QApplication.translate("dtutils", "Choose Layer"),
+                                                           msg, chooseFrom, editable=False)
 
         if ok:
             retValue = layerList[selectedLayer][1]
 
     return retValue
 
+
 def dtGetNoSelMessage():
     '''Returns an array of QStrings (default messages)'''
     noSelMsg1 = QtCore.QCoreApplication.translate("digitizingtools", "No Selection in layer")
     noSelMsg2 = QtCore.QCoreApplication.translate("digitizingtools", "Use all features for process?")
-    return [noSelMsg1,  noSelMsg2]
+    return [noSelMsg1, noSelMsg2]
+
 
 def dtGetManySelMessage(layer):
     '''Returns an array of QStrings (default messages)'''
     manySelMsg = QtCore.QCoreApplication.translate("digitizingtools", "There are ")
     manySelMsg += str(layer.selectedFeatureCount())
-    manySelMsg += QtCore.QCoreApplication.translate("digitizingtools", " features selected in layer " )
+    manySelMsg += QtCore.QCoreApplication.translate("digitizingtools", " features selected in layer ")
     manySelMsg += layer.name() + "."
     return manySelMsg
+
 
 def dtGetInvalidGeomWarning(layer):
     invalidGeomMsg = QtCore.QCoreApplication.translate("digitizingtools", "There are invalid geometries in layer ")
     invalidGeomMsg += layer.name()
     return invalidGeomMsg
 
+
 def dtGetNotMatchingGeomWarning(layer):
     notMatchingGeomMsg = QtCore.QCoreApplication.translate(
         "digitizingtools", "Geometry's type is not compatible with the following layer: ")
     notMatchingGeomMsg += layer.name() + ". "
-    notMatchingGeomMsg +=  QtCore.QCoreApplication.translate(
+    notMatchingGeomMsg += QtCore.QCoreApplication.translate(
         "digitizingtools", "Fix geometries before commiting changes.")
     return notMatchingGeomMsg
+
 
 def showSnapSettingsWarning(iface):
     title = QtCore.QCoreApplication.translate("digitizingtools", "Snap Tolerance")
     msg1 = QtCore.QCoreApplication.translate(
         "digitizingtools", "Could not snap vertex")
     msg2 = QtCore.QCoreApplication.translate("digitizingtools",
-        "Have you set the tolerance in Settings > Snapping Options?")
+                                             "Have you set the tolerance in Settings > Snapping Options?")
 
     dtShowWarning(iface, msg1 + " " + msg2, title)
 
-def dtShowWarning(iface, msg, title = None):
+
+def dtShowWarning(iface, msg, title=None):
     iface.messageBar().pushWarning(title, msg)
+
 
 def dtGetErrorMessage():
     '''Returns the default error message which can be appended'''
     return QtCore.QCoreApplication.translate("digitizingtools", "Error occured during")
 
+
 # code taken from fTools plugin
-def dtExtractPoints( geom ):
+def dtExtractPoints(geom):
     '''Generate list of QgsPoints from QgsGeometry *geom* ( can be point, line, or polygon )'''
     multi_geom = QgsGeometry()
     temp_geom = []
-    if geom.type() == 0: # it's a point
+    if geom.type() == 0:  # it's a point
         if geom.isMultipart():
             temp_geom = geom.asMultiPoint()
         else:
             temp_geom.append(geom.asPoint())
-    if geom.type() == 1: # it's a line
+    if geom.type() == 1:  # it's a line
         if geom.isMultipart():
-            multi_geom = geom.asMultiPolyline() #multi_geog is a multiline
-            for i in multi_geom: #i is a line
-                temp_geom.extend( i )
+            multi_geom = geom.asMultiPolyline()  # multi_geog is a multiline
+            for i in multi_geom:  # i is a line
+                temp_geom.extend(i)
         else:
             temp_geom = geom.asPolyline()
-    elif geom.type() == 2: # it's a polygon
+    elif geom.type() == 2:  # it's a polygon
         if geom.isMultipart():
-            multi_geom = geom.asMultiPolygon() #multi_geom is a multipolygon
-            for i in multi_geom: #i is a polygon
-                for j in i: #j is a line
-                    temp_geom.extend( j )
+            multi_geom = geom.asMultiPolygon()  # multi_geom is a multipolygon
+            for i in multi_geom:  # i is a polygon
+                for j in i:  # j is a line
+                    temp_geom.extend(j)
         else:
-            multi_geom = geom.asPolygon() #multi_geom is a polygon
-            for i in multi_geom: #i is a line
-                temp_geom.extend( i )
+            multi_geom = geom.asPolygon()  # multi_geom is a polygon
+            for i in multi_geom:  # i is a line
+                temp_geom.extend(i)
     return temp_geom
+
 
 # code adopted from ringer plugin
 def dtExtractRings(geom):
     '''Generate a list of QgsPolygons representing all rings within *geom* (= polygon)'''
     rings = []
 
-    if geom.type() == 2: # it's a polygon
+    if geom.type() == 2:  # it's a polygon
         if geom.isMultipart():
-            multi_geom = geom.asMultiPolygon() #multi_geom is a multipolygon
+            multi_geom = geom.asMultiPolygon()  # multi_geom is a multipolygon
             for poly in multi_geom:
                 if len(poly) > 1:
                     for aRing in poly[1:]:
@@ -213,7 +228,8 @@ def dtExtractRings(geom):
 
     return rings
 
-def dtCombineSelectedPolygons(layer, iface, multiGeom = None, fillRings = True):
+
+def dtCombineSelectedPolygons(layer, iface, multiGeom=None, fillRings=True):
     '''
     make one polygon from selected polygons in layer, optionally fill
     all rings contained in the input polygons
@@ -254,6 +270,7 @@ def dtCombineSelectedPolygons(layer, iface, multiGeom = None, fillRings = True):
 
     return multiGeom
 
+
 def dtSpatialindex(layer):
     """Creates a spatial index for the passed vector layer.
     """
@@ -261,6 +278,7 @@ def dtSpatialindex(layer):
     for ft in layer.getFeatures():
         idx.addFeature(ft)
     return idx
+
 
 def dtDeleteRings(poly):
     outGeom = QgsGeometry.fromPolygonXY(poly)
@@ -273,6 +291,7 @@ def dtDeleteRings(poly):
 
     return outGeom
 
+
 def dtGetDefaultAttributeMap(layer):
     attributeMap = {}
     dp = layer.dataProvider()
@@ -282,12 +301,13 @@ def dtGetDefaultAttributeMap(layer):
 
     return attributeMap
 
+
 def dtGetHighlightSettings():
     '''highlight a geom in a layer with highlight color from settings'''
     s = QtCore.QSettings()
     s.beginGroup("Map/highlight")
-    buffer = s.value("buffer",  "0.5")
-    hexColor = s.value("color",  "#ff0000")
+    buffer = s.value("buffer", "0.5")
+    hexColor = s.value("color", "#ff0000")
     colorAlpha = s.value("colorAlpha", "128")
     minWidth = s.value("minWidth", "1")
     s.endGroup()
@@ -298,4 +318,3 @@ def dtGetHighlightSettings():
     fillColor.setRgb(r, g, b, int(colorAlpha))
 
     return [color, fillColor, float(buffer), float(minWidth)]
-

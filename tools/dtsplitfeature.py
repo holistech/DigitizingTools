@@ -3,6 +3,8 @@
 dtsplitfeature
 `````````````
 """
+from datetime import datetime
+
 """
 Part of DigitizingTools, a QGIS plugin that
 subsumes different tools neded during digitizing sessions
@@ -26,13 +28,15 @@ import dt_icons_rc
 from dttools import DtSingleEditTool, DtSplitFeatureTool
 import dtutils
 
+
 class DtSplitFeature(DtSingleEditTool):
     '''Split feature'''
-    def __init__(self, iface,  toolBar):
-        super().__init__(iface,  toolBar,
-            QtGui.QIcon(":/splitfeature.png"),
-            QtCore.QCoreApplication.translate("digitizingtools", "Split Features"),
-            geometryTypes = [2, 3, 5, 6], crsWarning = False, dtName = "dtSplitFeature")
+
+    def __init__(self, iface, toolBar):
+        super().__init__(iface, toolBar,
+                         QtGui.QIcon(":/splitfeature.png"),
+                         QtCore.QCoreApplication.translate("digitizingtools", "Split Features"),
+                         geometryTypes=[2, 3, 5, 6], crsWarning=False, dtName="dtSplitFeature")
 
         self.tool = DtSplitFeatureTool(self.iface)
         self.tool.finishedDigitizing.connect(self.digitizingFinished)
@@ -46,9 +50,17 @@ class DtSplitFeature(DtSingleEditTool):
 
     def digitizingFinished(self, splitGeom):
         title = QtCore.QCoreApplication.translate("digitizingtools", "Split Features")
-        hlColor, hlFillColor, hlBuffer,  hlMinWidth = dtutils.dtGetHighlightSettings()
+        hlColor, hlFillColor, hlBuffer, hlMinWidth = dtutils.dtGetHighlightSettings()
         selIds = self.editLayer.selectedFeatureIds()
         self.editLayer.removeSelection()
+
+        # First commit all changes to the layer
+        # TODO: Check for commit errors and perform a rollback, inform the user
+        self.editLayer.commitChanges()
+        self.editLayer = self.iface.activeLayer()
+        self.editLayer.startEditing()
+
+        dtNow = datetime.now()
 
         if self.editLayer.crs().srsid() != QgsProject.instance().crs().srsid():
             splitGeom.transform(QgsCoordinateTransform(
@@ -56,13 +68,14 @@ class DtSplitFeature(DtSingleEditTool):
                 QgsProject.instance()
             ))
         splitterPList = dtutils.dtExtractPoints(splitGeom)
-        featuresToAdd = [] # store new features in this array
-        featuresToKeep = {} # store geoms that will stay with their id as key
+        featuresToAdd = []  # store new features in this array
+        featuresToKeep = {}  # store geoms that will stay with their id as key
         featuresToSplit = {}
         topoEditEnabled = QgsProject.instance().topologicalEditing()
-        topoTestPointsAll = [] # store all topoTestPoints for all parts
+        topoTestPointsAll = []  # store all topoTestPoints for all parts
 
         for aFeat in self.editLayer.getFeatures(QgsFeatureRequest(splitGeom.boundingBox())):
+            # This id is the predecessor of all new features
             anId = aFeat.id()
 
             # work either on selected or all features if no selection exists
@@ -97,16 +110,17 @@ class DtSplitFeature(DtSingleEditTool):
 
             for thisGeom in geomsToSplit:
                 try:
-                    result,  newGeometries,  topoTestPoints = thisGeom.splitGeometry(splitterPList,  topoEditEnabled)
+                    result, newGeometries, topoTestPoints = thisGeom.splitGeometry(splitterPList, topoEditEnabled)
                 except:
                     self.iface.messageBar().pushCritical(title,
-                        dtutils.dtGetErrorMessage() + QtCore.QCoreApplication.translate(
-                            "digitizingtools", "splitting of feature") + " " + str(aFeat.id()))
+                                                         dtutils.dtGetErrorMessage() + QtCore.QCoreApplication.translate(
+                                                             "digitizingtools", "splitting of feature") + " " + str(
+                                                             aFeat.id()))
                     return None
 
                 topoTestPointsAll.append(topoTestPoints)
 
-                if result == 0: # success
+                if result == 0:  # success
                     if len(newGeometries) > 0:
                         splitResult = newGeometries
 
@@ -127,7 +141,8 @@ class DtSplitFeature(DtSingleEditTool):
                             hl.show()
                             answer = QtWidgets.QMessageBox.question(
                                 None, QtCore.QCoreApplication.translate("digitizingtools", "Split Multipart Feature"),
-                                QtCore.QCoreApplication.translate("digitizingtools", "Create new feature from this part?"),
+                                QtCore.QCoreApplication.translate("digitizingtools",
+                                                                  "Create new feature from this part?"),
                                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.NoToAll)
                             hl.hide()
                             hl = None
@@ -148,24 +163,40 @@ class DtSplitFeature(DtSingleEditTool):
                     elif takeThisOne >= 0:
                         newGeoms = [splitResult.pop(takeThisOne)]
 
-                        if len(splitResult) > 0: #should be
+                        if len(splitResult) > 0:  # should be
                             for aNewGeom in splitResult:
                                 if keepGeom == None:
                                     keepGeom = aNewGeom
                                 else:
                                     keepGeom = keepGeom.combine(aNewGeom)
-                else: # singlePart
+                else:  # singlePart
                     keepGeom = thisGeom
                     newGeoms = newGeometries
 
-                newFeatures = dtutils.dtMakeFeaturesFromGeometries(self.editLayer,  aFeat,  newGeoms)
+                context = QgsExpressionContextUtils.createFeatureBasedContext(aFeat, self.editLayer.fields())
+                global_scope = QgsExpressionContextUtils.globalProjectLayerScopes(self.editLayer)
+                context.appendScopes(global_scope)
+
+                scope = QgsExpressionContextScope()
+                scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_operation", 1))
+                scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_predecessors", f"{anId}"))
+                scope.addVariable(QgsExpressionContextScope.StaticVariable("sm_operation_date", dtNow))
+                context.appendScope(scope)
+
+                for i in range(len(aFeat.attributes())):
+                    if self.editLayer.defaultValueDefinition(i):
+                        aFeat[i] = self.editLayer.defaultValue(i, aFeat, context)
+
+                newFeatures = dtutils.dtMakeFeaturesFromGeometries(self.editLayer, aFeat, newGeoms)
                 featuresToAdd = featuresToAdd + newFeatures
+                # Store the predecessor id in the feature
+                # for feature in featuresToAdd:
+                #    feature["sm_predecessors"] = f"{anId}"
 
             aFeat.setGeometry(keepGeom)
             featuresToKeep[anId] = aFeat
 
-        for anId,  aFeat in list(featuresToKeep.items()):
-            aGeom = aFeat.geometry()
+        for anId, aFeat in list(featuresToKeep.items()):
             self.editLayer.updateFeature(aFeat)
 
         if len(featuresToAdd) > 0:
@@ -181,7 +212,7 @@ class DtSplitFeature(DtSingleEditTool):
         else:
             self.editLayer.destroyEditCommand()
 
-        if hasattr(self.editLayer, "selectByIds"): # since QGIS 2.16
+        if hasattr(self.editLayer, "selectByIds"):  # since QGIS 2.16
             self.editLayer.selectByIds(selIds)
         else:
             self.editLayer.setSelectedFeatures(selIds)
@@ -190,5 +221,3 @@ class DtSplitFeature(DtSingleEditTool):
         self.canvas.setMapTool(self.tool)
         self.act.setChecked(True)
         self.editLayer = self.iface.activeLayer()
-
-

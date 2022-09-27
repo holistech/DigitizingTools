@@ -19,38 +19,40 @@ the Free Software Foundation; either version 2 of the License, or
 
 from builtins import range
 from builtins import object
-from qgis.PyQt import QtGui,  QtCore, QtWidgets
+from qgis.PyQt import QtGui, QtCore, QtWidgets
 from qgis.core import *
 from qgis.gui import *
 import dtutils
 
+
 class DtTool(object):
     '''Abstract class; parent for any Dt tool or button'''
-    def __init__(self,  iface,  geometryTypes, **kw):
+
+    def __init__(self, iface, geometryTypes, **kw):
         self.iface = iface
         self.canvas = self.iface.mapCanvas()
 
-        #custom cursor
+        # custom cursor
         self.cursor = QtGui.QCursor(QtGui.QPixmap(["16 16 3 1",
-                                        "      c None",
-                                        ".     c #FF0000",
-                                        "+     c #FFFFFF",
-                                        "                ",
-                                        "       +.+      ",
-                                        "      ++.++     ",
-                                        "     +.....+    ",
-                                        "    +.     .+   ",
-                                        "   +.   .   .+  ",
-                                        "  +.    .    .+ ",
-                                        " ++.    .    .++",
-                                        " ... ...+... ...",
-                                        " ++.    .    .++",
-                                        "  +.    .    .+ ",
-                                        "   +.   .   .+  ",
-                                        "   ++.     .+   ",
-                                        "    ++.....+    ",
-                                        "      ++.++     ",
-                                        "       +.+      "]))
+                                                   "      c None",
+                                                   ".     c #FF0000",
+                                                   "+     c #FFFFFF",
+                                                   "                ",
+                                                   "       +.+      ",
+                                                   "      ++.++     ",
+                                                   "     +.....+    ",
+                                                   "    +.     .+   ",
+                                                   "   +.   .   .+  ",
+                                                   "  +.    .    .+ ",
+                                                   " ++.    .    .++",
+                                                   " ... ...+... ...",
+                                                   " ++.    .    .++",
+                                                   "  +.    .    .+ ",
+                                                   "   +.   .   .+  ",
+                                                   "   ++.     .+   ",
+                                                   "    ++.....+    ",
+                                                   "      ++.++     ",
+                                                   "       +.+      "]))
 
         self.geometryTypes = []
         self.shapeFileGeometryTypes = []
@@ -58,40 +60,40 @@ class DtTool(object):
         # ESRI shapefile does not distinguish between single and multi geometries
         # source of wkbType numbers: http://gdal.org/java/constant-values.html
         for aGeomType in geometryTypes:
-            if aGeomType == 1: # wkbPoint
+            if aGeomType == 1:  # wkbPoint
                 self.geometryTypes.append(1)
                 self.shapeFileGeometryTypes.append(4)
-                self.geometryTypes.append(-2147483647) #wkbPoint25D
+                self.geometryTypes.append(-2147483647)  # wkbPoint25D
                 self.shapeFileGeometryTypes.append(-2147483647)
-            elif aGeomType == 2: # wkbLineString
+            elif aGeomType == 2:  # wkbLineString
                 self.geometryTypes.append(2)
                 self.shapeFileGeometryTypes.append(5)
-                self.geometryTypes.append(-2147483646) #wkbLineString25D
+                self.geometryTypes.append(-2147483646)  # wkbLineString25D
                 self.shapeFileGeometryTypes.append(-2147483646)
-            elif aGeomType == 3: # wkbPolygon
+            elif aGeomType == 3:  # wkbPolygon
                 self.geometryTypes.append(3)
                 self.shapeFileGeometryTypes.append(6)
-                self.geometryTypes.append(-2147483645) #wkbPolygon25D
+                self.geometryTypes.append(-2147483645)  # wkbPolygon25D
                 self.shapeFileGeometryTypes.append(-2147483645)
-            elif aGeomType == 4: # wkbMultiPoint
+            elif aGeomType == 4:  # wkbMultiPoint
                 self.geometryTypes.append(4)
-                self.shapeFileGeometryTypes.append(1) # wkbPoint
-                self.geometryTypes.append(-2147483644) #wkbMultiPoint25D
-                self.shapeFileGeometryTypes.append(-2147483647) #wkbPoint25D
-            elif aGeomType == 5: # wkbMultiLineString
+                self.shapeFileGeometryTypes.append(1)  # wkbPoint
+                self.geometryTypes.append(-2147483644)  # wkbMultiPoint25D
+                self.shapeFileGeometryTypes.append(-2147483647)  # wkbPoint25D
+            elif aGeomType == 5:  # wkbMultiLineString
                 self.geometryTypes.append(5)
-                self.shapeFileGeometryTypes.append(2) # wkbLineString
-                self.geometryTypes.append(-2147483643) #wkbMultiLineString25D
-                self.shapeFileGeometryTypes.append(-2147483646) #wkbLineString25D
-            elif aGeomType == 6: # wkbMultiPolygon
+                self.shapeFileGeometryTypes.append(2)  # wkbLineString
+                self.geometryTypes.append(-2147483643)  # wkbMultiLineString25D
+                self.shapeFileGeometryTypes.append(-2147483646)  # wkbLineString25D
+            elif aGeomType == 6:  # wkbMultiPolygon
                 self.geometryTypes.append(6)
-                self.shapeFileGeometryTypes.append(6) # wkbPolygon
-                self.geometryTypes.append(-2147483642) #wkbMultiPolygon25D
-                self.shapeFileGeometryTypes.append(-2147483645) #wkbPolygon25D
+                self.shapeFileGeometryTypes.append(6)  # wkbPolygon
+                self.geometryTypes.append(-2147483642)  # wkbMultiPolygon25D
+                self.shapeFileGeometryTypes.append(-2147483645)  # wkbPolygon25D
 
-    def allowedGeometry(self,  layer):
+    def allowedGeometry(self, layer):
         '''check if this layer's geometry type is within the list of allowed types'''
-        if layer.dataProvider().storageType() == u'ESRI Shapefile': # does not distinguish between single and multi
+        if layer.dataProvider().storageType() == u'ESRI Shapefile':  # does not distinguish between single and multi
             result = self.shapeFileGeometryTypes.count(layer.wkbType()) >= 1
         else:
             result = self.geometryTypes.count(layer.wkbType()) == 1
@@ -106,16 +108,16 @@ class DtTool(object):
             if layer.dataProvider().storageType() == u'ESRI Shapefile':
                 # does not distinguish between single and multi
                 match = (layer.wkbType() == 1 and geom.wkbType() == 4) or \
-                    (layer.wkbType() == 2 and geom.wkbType() == 5) or \
-                    (layer.wkbType() == 3 and geom.wkbType() == 6) or \
-                    (layer.wkbType() == 4 and geom.wkbType() == 1) or \
-                    (layer.wkbType() == 5 and geom.wkbType() == 2) or \
-                    (layer.wkbType() == 6 and geom.wkbType() == 3)
+                        (layer.wkbType() == 2 and geom.wkbType() == 5) or \
+                        (layer.wkbType() == 3 and geom.wkbType() == 6) or \
+                        (layer.wkbType() == 4 and geom.wkbType() == 1) or \
+                        (layer.wkbType() == 5 and geom.wkbType() == 2) or \
+                        (layer.wkbType() == 6 and geom.wkbType() == 3)
             else:
                 # are we trying a single into a multi layer?
                 match = (layer.wkbType() == 4 and geom.wkbType() == 1) or \
-                    (layer.wkbType() == 5 and geom.wkbType() == 2) or \
-                    (layer.wkbType() == 6 and geom.wkbType() == 3)
+                        (layer.wkbType() == 5 and geom.wkbType() == 2) or \
+                        (layer.wkbType() == 6 and geom.wkbType() == 3)
 
         return match
 
@@ -130,14 +132,15 @@ class DtTool(object):
         title = "DigitizingTools Debugger"
         QgsMessageLog.logMessage(title + "\n" + str)
 
+
 class DtSingleButton(DtTool):
     '''Abstract class for a single button
     icon [QtGui.QIcon]
     tooltip [str]
     geometryTypes [array:integer] 0=point, 1=line, 2=polygon'''
 
-    def __init__(self, iface,  toolBar,  icon,  tooltip,  geometryTypes = [1, 2, 3],  dtName = None):
-        super().__init__(iface,  geometryTypes)
+    def __init__(self, iface, toolBar, icon, tooltip, geometryTypes=[1, 2, 3], dtName=None):
+        super().__init__(iface, geometryTypes)
 
         self.act = QtWidgets.QAction(icon, tooltip, self.iface.mainWindow())
         self.act.triggered.connect(self.process)
@@ -159,30 +162,32 @@ class DtSingleButton(DtTool):
         layer = self.iface.activeLayer()
 
         if layer != None:
-            #Only for vector layers.
+            # Only for vector layers.
             if layer.type() == QgsMapLayer.VectorLayer:
                 if self.allowedGeometry(layer):
                     self.act.setEnabled(layer.isEditable())
                     try:
-                        layer.editingStarted.disconnect(self.enable) # disconnect, will be reconnected
+                        layer.editingStarted.disconnect(self.enable)  # disconnect, will be reconnected
                     except:
                         pass
                     try:
-                        layer.editingStopped.disconnect(self.enable) # when it becomes active layer again
+                        layer.editingStopped.disconnect(self.enable)  # when it becomes active layer again
                     except:
                         pass
                     layer.editingStarted.connect(self.enable)
                     layer.editingStopped.connect(self.enable)
 
+
 class DtSingleTool(DtSingleButton):
     '''Abstract class for a tool'''
-    def __init__(self, iface,  toolBar,  icon,  tooltip,  geometryTypes = [0, 1, 2],  crsWarning = True,  dtName = None):
-        super().__init__(iface,  toolBar,  icon,  tooltip,  geometryTypes,  dtName)
+
+    def __init__(self, iface, toolBar, icon, tooltip, geometryTypes=[0, 1, 2], crsWarning=True, dtName=None):
+        super().__init__(iface, toolBar, icon, tooltip, geometryTypes, dtName)
         self.tool = None
         self.act.setCheckable(True)
         self.canvas.mapToolSet.connect(self.toolChanged)
 
-    def toolChanged(self,  thisTool):
+    def toolChanged(self, thisTool):
         if thisTool != self.tool:
             self.deactivate()
 
@@ -196,10 +201,12 @@ class DtSingleTool(DtSingleButton):
     def reset(self):
         pass
 
+
 class DtSingleEditTool(DtSingleTool):
     '''Abstract class for a tool for interactive editing'''
-    def __init__(self, iface,  toolBar,  icon,  tooltip,  geometryTypes = [0, 1, 2],  crsWarning = True,  dtName = None):
-        super().__init__(iface,  toolBar,  icon,  tooltip,  geometryTypes,  dtName)
+
+    def __init__(self, iface, toolBar, icon, tooltip, geometryTypes=[0, 1, 2], crsWarning=True, dtName=None):
+        super().__init__(iface, toolBar, icon, tooltip, geometryTypes, dtName)
         self.crsWarning = crsWarning
         self.editLayer = None
 
@@ -213,28 +220,28 @@ class DtSingleEditTool(DtSingleTool):
         layer = self.iface.activeLayer()
 
         if layer != None:
-            if layer.type() == 0: #Only for vector layers.
+            if layer.type() == 0:  # Only for vector layers.
                 if self.allowedGeometry(layer):
                     doEnable = layer.isEditable()
                     try:
-                        layer.editingStarted.disconnect(self.enable) # disconnect, will be reconnected
+                        layer.editingStarted.disconnect(self.enable)  # disconnect, will be reconnected
                     except:
                         pass
                     try:
-                        layer.editingStopped.disconnect(self.enable) # when it becomes active layer again
+                        layer.editingStopped.disconnect(self.enable)  # when it becomes active layer again
                     except:
                         pass
                     layer.editingStarted.connect(self.enable)
                     layer.editingStopped.connect(self.enable)
 
-        if self.editLayer != None: # we have a current edit session, activeLayer may have changed or editing status of self.editLayer
+        if self.editLayer != None:  # we have a current edit session, activeLayer may have changed or editing status of self.editLayer
             if self.editLayer != layer:
                 try:
-                    self.editLayer.editingStarted.disconnect(self.enable) # disconnect, will be reconnected
+                    self.editLayer.editingStarted.disconnect(self.enable)  # disconnect, will be reconnected
                 except:
                     pass
                 try:
-                    self.editLayer.editingStopped.disconnect(self.enable) # when it becomes active layer again
+                    self.editLayer.editingStopped.disconnect(self.enable)  # when it becomes active layer again
                 except:
                     pass
 
@@ -250,12 +257,13 @@ class DtSingleEditTool(DtSingleTool):
             projectCRSSrsid = mapSet.destinationCrs().srsid()
 
             if layerCRSSrsid != projectCRSSrsid:
-                self.iface.messageBar().pushWarning("DigitizingTools",  self.act.toolTip() + " " +
-                    QtWidgets.QApplication.translate("DigitizingTools",
-                    "is disabled because layer CRS and project CRS do not match!"))
+                self.iface.messageBar().pushWarning("DigitizingTools", self.act.toolTip() + " " +
+                                                    QtWidgets.QApplication.translate("DigitizingTools",
+                                                                                     "is disabled because layer CRS and project CRS do not match!"))
                 doEnable = False
 
         self.act.setEnabled(doEnable)
+
 
 class DtDualTool(DtTool):
     '''Abstract class for a tool with interactive and batch mode
@@ -265,16 +273,16 @@ class DtDualTool(DtTool):
     tooltipBatch [str] for batch mode
     geometryTypes [array:integer] 0=point, 1=line, 2=polygon'''
 
-    def __init__(self, iface,  toolBar,  icon,  tooltip,  iconBatch,  tooltipBatch,  geometryTypes = [1, 2, 3],  dtName = None):
-        super().__init__(iface,  geometryTypes)
+    def __init__(self, iface, toolBar, icon, tooltip, iconBatch, tooltipBatch, geometryTypes=[1, 2, 3], dtName=None):
+        super().__init__(iface, geometryTypes)
 
         self.iface.currentLayerChanged.connect(self.enable)
         self.canvas.mapToolSet.connect(self.toolChanged)
-        #create button
+        # create button
         self.button = QtWidgets.QToolButton(toolBar)
         self.button.clicked.connect(self.runSlot)
         self.button.toggled.connect(self.hasBeenToggled)
-        #create menu
+        # create menu
         self.menu = QtWidgets.QMenu(toolBar)
 
         if dtName != None:
@@ -284,13 +292,13 @@ class DtDualTool(DtTool):
         self.button.setMenu(self.menu)
         self.button.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
         # create actions
-        self.act = QtWidgets.QAction(icon, tooltip,  self.iface.mainWindow())
+        self.act = QtWidgets.QAction(icon, tooltip, self.iface.mainWindow())
 
         if dtName != None:
             self.act.setObjectName(dtName + "Action")
 
         self.act.setToolTip(tooltip)
-        self.act_batch = QtWidgets.QAction(iconBatch, tooltipBatch,  self.iface.mainWindow())
+        self.act_batch = QtWidgets.QAction(iconBatch, tooltipBatch, self.iface.mainWindow())
 
         if dtName != None:
             self.act_batch.setObjectName(dtName + "BatchAction")
@@ -309,7 +317,7 @@ class DtDualTool(DtTool):
         # run the enable slot
         self.enable()
 
-    def menuTriggered(self,  thisAction):
+    def menuTriggered(self, thisAction):
         if thisAction == self.act:
             self.batchMode = False
             self.button.setCheckable(True)
@@ -327,11 +335,11 @@ class DtDualTool(DtTool):
         self.button.setIcon(thisAction.icon())
         self.button.setToolTip(thisAction.toolTip())
 
-    def toolChanged(self,  thisTool):
+    def toolChanged(self, thisTool):
         if thisTool != self.tool:
             self.deactivate()
 
-    def hasBeenToggled(self,  isChecked):
+    def hasBeenToggled(self, isChecked):
         raise NotImplementedError("Should have implemented hasBeenToggled")
 
     def deactivate(self):
@@ -339,7 +347,7 @@ class DtDualTool(DtTool):
             if self.button.isChecked():
                 self.button.toggle()
 
-    def runSlot(self,  isChecked):
+    def runSlot(self, isChecked):
         if self.batchMode:
             layer = self.iface.activeLayer()
 
@@ -353,12 +361,12 @@ class DtDualTool(DtTool):
         raise NotImplementedError("Should have implemented process")
 
     def enable(self):
-       # Disable the Button by default
+        # Disable the Button by default
         self.button.setEnabled(False)
         layer = self.iface.activeLayer()
 
         if layer != None:
-            #Only for vector layers.
+            # Only for vector layers.
             if layer.type() == QgsMapLayer.VectorLayer:
 
                 # only for certain layers
@@ -369,11 +377,11 @@ class DtDualTool(DtTool):
                     self.button.setEnabled(layer.isEditable())
 
                     try:
-                        layer.editingStarted.disconnect(self.enable) # disconnect, will be reconnected
+                        layer.editingStarted.disconnect(self.enable)  # disconnect, will be reconnected
                     except:
                         pass
                     try:
-                        layer.editingStopped.disconnect(self.enable) # when it becomes active layer again
+                        layer.editingStopped.disconnect(self.enable)  # when it becomes active layer again
                     except:
                         pass
                     layer.editingStarted.connect(self.enable)
@@ -381,18 +389,19 @@ class DtDualTool(DtTool):
                 else:
                     self.deactivate()
 
+
 class DtDualToolSelectFeature(DtDualTool):
     '''Abstract class for a DtDualToo which uses the DtSelectFeatureTool for interactive mode'''
 
-    def __init__(self, iface,  toolBar,  icon,  tooltip,  iconBatch,  tooltipBatch,  geometryTypes = [1, 2, 3],  dtName = None):
-        super().__init__(iface,  toolBar,  icon,  tooltip,  iconBatch,  tooltipBatch,  geometryTypes,  dtName)
+    def __init__(self, iface, toolBar, icon, tooltip, iconBatch, tooltipBatch, geometryTypes=[1, 2, 3], dtName=None):
+        super().__init__(iface, toolBar, icon, tooltip, iconBatch, tooltipBatch, geometryTypes, dtName)
         self.tool = DtSelectFeatureTool(iface)
 
-    def featureSelectedSlot(self,  fids):
-        if len(fids) >0:
+    def featureSelectedSlot(self, fids):
+        if len(fids) > 0:
             self.process()
 
-    def hasBeenToggled(self,  isChecked):
+    def hasBeenToggled(self, isChecked):
         try:
             self.tool.featureSelected.disconnect(self.featureSelectedSlot)
             # disconnect if it was already connected, so slot gets called only once!
@@ -405,22 +414,25 @@ class DtDualToolSelectFeature(DtDualTool):
         else:
             self.canvas.unsetMapTool(self.tool)
 
+
 class DtDualToolSelectPolygon(DtDualToolSelectFeature):
     '''Abstract class for a DtDualToo which uses the DtSelectFeatureTool for interactive mode'''
 
-    def __init__(self, iface,  toolBar,  icon,  tooltip,  iconBatch,  tooltipBatch,  geometryTypes = [3, 6],  dtName = None):
-        super().__init__(iface,  toolBar,  icon,  tooltip,  iconBatch,  tooltipBatch,  geometryTypes,  dtName)
+    def __init__(self, iface, toolBar, icon, tooltip, iconBatch, tooltipBatch, geometryTypes=[3, 6], dtName=None):
+        super().__init__(iface, toolBar, icon, tooltip, iconBatch, tooltipBatch, geometryTypes, dtName)
         self.tool = DtSelectPolygonTool(iface)
+
 
 class DtDualToolSelectVertex(DtDualTool):
     '''Abstract class for a DtDualTool which uses the DtSelectVertexTool for interactive mode
     numVertices [integer] nnumber of vertices to be snapped until vertexFound signal is emitted'''
 
-    def __init__(self, iface,  toolBar,  icon,  tooltip,  iconBatch,  tooltipBatch,  geometryTypes = [1, 2, 3],  numVertices = 1,  dtName = None):
-        super().__init__(iface,  toolBar,  icon,  tooltip,  iconBatch,  tooltipBatch,  geometryTypes,  dtName)
+    def __init__(self, iface, toolBar, icon, tooltip, iconBatch, tooltipBatch, geometryTypes=[1, 2, 3], numVertices=1,
+                 dtName=None):
+        super().__init__(iface, toolBar, icon, tooltip, iconBatch, tooltipBatch, geometryTypes, dtName)
         self.tool = DtSelectVertexTool(self.iface, numVertices)
 
-    def hasBeenToggled(self,  isChecked):
+    def hasBeenToggled(self, isChecked):
         try:
             self.tool.vertexFound.disconnect(self.vertexSnapped)
             # disconnect if it was already connected, so slot gets called only once!
@@ -433,8 +445,9 @@ class DtDualToolSelectVertex(DtDualTool):
         else:
             self.canvas.unsetMapTool(self.tool)
 
-    def vertexSnapped(self,  snapResult):
+    def vertexSnapped(self, snapResult):
         raise NotImplementedError("Should have implemented vertexSnapped")
+
 
 class DtDualToolSelectRing(DtDualTool):
     '''
@@ -442,12 +455,12 @@ class DtDualToolSelectRing(DtDualTool):
     '''
 
     def __init__(self, iface, toolBar, icon, tooltip, iconBatch,
-        tooltipBatch, geometryTypes = [1, 2, 3], dtName = None):
+                 tooltipBatch, geometryTypes=[1, 2, 3], dtName=None):
         super().__init__(iface, toolBar, icon, tooltip,
-            iconBatch, tooltipBatch, geometryTypes, dtName)
+                         iconBatch, tooltipBatch, geometryTypes, dtName)
         self.tool = DtSelectRingTool(self.iface)
 
-    def hasBeenToggled(self,  isChecked):
+    def hasBeenToggled(self, isChecked):
         try:
             self.tool.ringSelected.disconnect(self.ringFound)
             # disconnect if it was already connected, so slot gets called only once!
@@ -463,16 +476,17 @@ class DtDualToolSelectRing(DtDualTool):
     def ringFound(self, selectRingResult):
         raise NotImplementedError("Should have implemented ringFound")
 
+
 class DtDualToolSelectGap(DtDualTool):
     '''
     Abstract class for a DtDualTool which uses the DtSelectGapTool for interactive mode
     '''
 
     def __init__(self, iface, toolBar, icon, tooltip, iconBatch,
-            tooltipBatch, geometryTypes = [1, 2, 3], dtName = None,
-            allLayers = False):
+                 tooltipBatch, geometryTypes=[1, 2, 3], dtName=None,
+                 allLayers=False):
         super().__init__(iface, toolBar, icon, tooltip,
-            iconBatch, tooltipBatch, geometryTypes, dtName)
+                         iconBatch, tooltipBatch, geometryTypes, dtName)
         self.tool = DtSelectGapTool(self.iface, allLayers)
 
     def hasBeenToggled(self, isChecked):
@@ -491,10 +505,12 @@ class DtDualToolSelectGap(DtDualTool):
     def gapFound(self, selectGapResult):
         raise NotImplementedError("Should have implemented gapFound")
 
+
 class DtMapToolEdit(QgsMapToolEdit, DtTool):
     '''abstract subclass of QgsMapToolEdit'''
+
     def __init__(self, iface, **kw):
-        super().__init__(canvas = iface.mapCanvas(), iface = iface,  geometryTypes = [])
+        super().__init__(canvas=iface.mapCanvas(), iface=iface, geometryTypes=[])
 
     def activate(self):
         self.canvas.setCursor(self.cursor)
@@ -502,7 +518,7 @@ class DtMapToolEdit(QgsMapToolEdit, DtTool):
     def deactivate(self):
         self.reset()
 
-    def reset(self,  emitSignal = False):
+    def reset(self, emitSignal=False):
         pass
 
     def transformed(self, thisLayer, thisQgsPoint):
@@ -518,15 +534,16 @@ class DtMapToolEdit(QgsMapToolEdit, DtTool):
         else:
             return thisQgsPoint
 
+
 class DtSelectFeatureTool(DtMapToolEdit):
     featureSelected = QtCore.pyqtSignal(list)
 
     def __init__(self, iface):
         super().__init__(iface)
-        self.currentHighlight = [None, None] # feature, highlightGraphic
-        self.ignoreFids = [] # featureids that schould be ignored when looking for a feature
+        self.currentHighlight = [None, None]  # feature, highlightGraphic
+        self.ignoreFids = []  # featureids that schould be ignored when looking for a feature
 
-    def highlightFeature(self,  layer,  feature):
+    def highlightFeature(self, layer, feature):
         '''highlight the feature if it has a geometry'''
         geomType = layer.geometryType()
         returnGeom = None
@@ -534,27 +551,27 @@ class DtSelectFeatureTool(DtMapToolEdit):
         if geomType <= 2:
             if geomType == 0:
                 marker = QgsVertexMarker(self.iface.mapCanvas())
-                marker.setIconType(3) # ICON_BOX
+                marker.setIconType(3)  # ICON_BOX
                 marker.setColor(self.rubberBandColor)
                 marker.setIconSize(12)
-                marker.setPenWidth (3)
+                marker.setPenWidth(3)
                 marker.setCenter(feature.geometry().centroid().asPoint())
                 returnGeom = marker
             else:
                 settings = QtCore.QSettings()
                 settings.beginGroup("Qgis/digitizing")
-                a = settings.value("line_color_alpha",200,type=int)
-                b = settings.value("line_color_blue",0,type=int)
-                g = settings.value("line_color_green",0,type=int)
-                r = settings.value("line_color_red",255,type=int)
-                lw = settings.value("line_width",1,type=int)
+                a = settings.value("line_color_alpha", 200, type=int)
+                b = settings.value("line_color_blue", 0, type=int)
+                g = settings.value("line_color_green", 0, type=int)
+                r = settings.value("line_color_red", 255, type=int)
+                lw = settings.value("line_width", 1, type=int)
                 settings.endGroup()
                 rubberBandColor = QtGui.QColor(r, g, b, a)
                 rubberBandWidth = lw
                 rubberBand = QgsRubberBand(self.iface.mapCanvas())
                 rubberBand.setColor(rubberBandColor)
                 rubberBand.setWidth(rubberBandWidth)
-                rubberBand.setToGeometry(feature.geometry(),  layer)
+                rubberBand.setToGeometry(feature.geometry(), layer)
                 returnGeom = rubberBand
 
             self.currentHighlight = [feature, returnGeom]
@@ -593,7 +610,7 @@ class DtSelectFeatureTool(DtMapToolEdit):
 
             return numFeatures
 
-    def getFeatureForPoint(self, layer, startingPoint, inRing = False):
+    def getFeatureForPoint(self, layer, startingPoint, inRing=False):
         '''
         return the feature this QPoint is in (polygon layer)
         or this QPoint snaps to (point or line layer)
@@ -602,7 +619,7 @@ class DtSelectFeatureTool(DtMapToolEdit):
 
         if self.isPolygonLayer(layer):
             mapToPixel = self.canvas.getCoordinateTransform()
-            #thisQgsPoint = mapToPixel.toMapCoordinates(startingPoint)
+            # thisQgsPoint = mapToPixel.toMapCoordinates(startingPoint)
             thisQgsPoint = self.transformed(layer, mapToPixel.toMapCoordinates(startingPoint))
             spatialIndex = dtutils.dtSpatialindex(layer)
             featureIds = spatialIndex.nearestNeighbor(thisQgsPoint, 0)
@@ -633,7 +650,7 @@ class DtSelectFeatureTool(DtMapToolEdit):
                                         return result
                                         break
         else:
-            #we need a snapper, so we use the MapCanvas snapper
+            # we need a snapper, so we use the MapCanvas snapper
             snapper = self.canvas.snappingUtils()
             snapper.setCurrentLayer(layer)
             # snapType = 0: no snap, 1 = vertex, 2 vertex & segment, 3 = segment
@@ -657,16 +674,16 @@ class DtSelectFeatureTool(DtMapToolEdit):
 
         return result
 
-    def canvasReleaseEvent(self,event):
-        #Get the click
+    def canvasReleaseEvent(self, event):
+        # Get the click
         x = event.pos().x()
         y = event.pos().y()
 
         layer = self.canvas.currentLayer()
 
         if layer != None:
-            #the clicked point is our starting point
-            startingPoint = QtCore.QPoint(x,y)
+            # the clicked point is our starting point
+            startingPoint = QtCore.QPoint(x, y)
             found = self.getFeatureForPoint(layer, startingPoint)
 
             if len(found) > 0:
@@ -674,6 +691,7 @@ class DtSelectFeatureTool(DtMapToolEdit):
                 layer.removeSelection()
                 layer.select(feat.id())
                 self.featureSelected.emit([feat.id()])
+
 
 class DtSelectPolygonTool(DtSelectFeatureTool):
     def __init__(self, iface):
@@ -685,7 +703,7 @@ class DtSelectPolygonTool(DtSelectFeatureTool):
         '''
         result = []
         mapToPixel = self.canvas.getCoordinateTransform()
-        #thisQgsPoint = mapToPixel.toMapCoordinates(startingPoint)
+        # thisQgsPoint = mapToPixel.toMapCoordinates(startingPoint)
         thisQgsPoint = self.transformed(layer, mapToPixel.toMapCoordinates(startingPoint))
         spatialIndex = dtutils.dtSpatialindex(layer)
         featureIds = spatialIndex.nearestNeighbor(thisQgsPoint, 0)
@@ -705,49 +723,47 @@ class DtSelectPolygonTool(DtSelectFeatureTool):
                             foundFeatures.append(feat)
 
             if len(foundFeatures) == 0:
-                if len(self.ignoreFids) == 0: #there is no feaure at this point
-                    break #while
+                if len(self.ignoreFids) == 0:  # there is no feaure at this point
+                    break  # while
                 else:
-                    self.ignoreFids.pop(0) # remove first and try again
-            elif len(foundFeatures) > 0: # return first feature
+                    self.ignoreFids.pop(0)  # remove first and try again
+            elif len(foundFeatures) > 0:  # return first feature
                 feat = foundFeatures[0]
                 result.append(feat)
                 result.append(len(featureIds))
-                break #while
+                break  # while
 
         return result
 
-
-
-    def canvasReleaseEvent(self,event):
+    def canvasReleaseEvent(self, event):
         '''
         - if user clicks left and no feature is highlighted, highlight first feature
         - if user clicks left and there is a highlighted feature use this feature as selected
         - if user clicks right, highlight another feature
         '''
-        #Get the click
+        # Get the click
         x = event.pos().x()
         y = event.pos().y()
 
         layer = self.canvas.currentLayer()
 
         if layer != None:
-            startingPoint = QtCore.QPoint(x,y)
-            #the clicked point is our starting point
+            startingPoint = QtCore.QPoint(x, y)
+            # the clicked point is our starting point
 
-            if event.button() == QtCore.Qt.RightButton: # choose another feature
+            if event.button() == QtCore.Qt.RightButton:  # choose another feature
                 self.highlightNext(layer, startingPoint)
             elif event.button() == QtCore.Qt.LeftButton:
-                if self.currentHighlight == [None, None]: # first click
+                if self.currentHighlight == [None, None]:  # first click
                     numFeatures = self.highlightNext(layer, startingPoint)
-                else: # user accepts highlighted geometry
+                else:  # user accepts highlighted geometry
                     mapToPixel = self.canvas.getCoordinateTransform()
                     thisQgsPoint = self.transformed(layer, mapToPixel.toMapCoordinates(startingPoint))
                     feat = self.currentHighlight[0]
 
-                    if feat.geometry().contains(thisQgsPoint): # is point in highlighted feature?
+                    if feat.geometry().contains(thisQgsPoint):  # is point in highlighted feature?
                         numFeatures = 1
-                    else: # mabe user clicked somewhere else
+                    else:  # mabe user clicked somewhere else
                         numFeatures = self.highlightNext(layer, startingPoint)
 
                 if numFeatures == 1:
@@ -760,6 +776,7 @@ class DtSelectPolygonTool(DtSelectFeatureTool):
     def reset(self):
         self.removeHighlight()
 
+
 class DtSelectRingTool(DtSelectFeatureTool):
     '''
     a map tool to select a ring in a polygon
@@ -769,24 +786,25 @@ class DtSelectRingTool(DtSelectFeatureTool):
     def __init__(self, iface):
         super().__init__(iface)
 
-    def canvasReleaseEvent(self,event):
-        #Get the click
+    def canvasReleaseEvent(self, event):
+        # Get the click
         x = event.pos().x()
         y = event.pos().y()
 
         layer = self.canvas.currentLayer()
 
         if layer != None:
-            #the clicked point is our starting point
-            startingPoint = QtCore.QPoint(x,y)
-            found = self.getFeatureForPoint(layer, startingPoint, inRing = True)
+            # the clicked point is our starting point
+            startingPoint = QtCore.QPoint(x, y)
+            found = self.getFeatureForPoint(layer, startingPoint, inRing=True)
 
             if len(found) == 3:
                 aRing = found[2]
                 self.ringSelected.emit([aRing])
 
-    def reset(self, emitSignal = False):
+    def reset(self, emitSignal=False):
         pass
+
 
 class DtSelectGapTool(DtMapToolEdit):
     '''
@@ -800,8 +818,8 @@ class DtSelectGapTool(DtMapToolEdit):
         super().__init__(iface)
         self.allLayers = allLayers
 
-    def canvasReleaseEvent(self,event):
-        #Get the click
+    def canvasReleaseEvent(self, event):
+        # Get the click
         x = event.pos().x()
         y = event.pos().y()
 
@@ -818,15 +836,15 @@ class DtSelectGapTool(DtMapToolEdit):
                 visibleLayers.append(layer)
 
         if len(visibleLayers) > 0:
-            #the clicked point is our starting point
-            startingPoint = QtCore.QPoint(x,y)
+            # the clicked point is our starting point
+            startingPoint = QtCore.QPoint(x, y)
             mapToPixel = self.canvas.getCoordinateTransform()
             thisQgsPoint = self.transformed(layer, mapToPixel.toMapCoordinates(startingPoint))
             multiGeom = None
 
             for aLayer in visibleLayers:
                 if not self.allLayers and aLayer.selectedFeatureCount() > 0:
-                    #we assume, that the gap is between the selected polyons
+                    # we assume, that the gap is between the selected polyons
                     hadSelection = True
                 else:
                     hadSelection = False
@@ -852,8 +870,9 @@ class DtSelectGapTool(DtMapToolEdit):
                             self.gapSelected.emit([aRing])
                             break
 
-    def reset(self, emitSignal = False):
+    def reset(self, emitSignal=False):
         pass
+
 
 class DtSelectPartTool(DtSelectFeatureTool):
     '''signal sends featureId of clickedd feature, number of part selected and geometry of part'''
@@ -862,16 +881,16 @@ class DtSelectPartTool(DtSelectFeatureTool):
     def __init__(self, iface):
         super().__init__(iface)
 
-    def canvasReleaseEvent(self,event):
-        #Get the click
+    def canvasReleaseEvent(self, event):
+        # Get the click
         x = event.pos().x()
         y = event.pos().y()
 
         layer = self.canvas.currentLayer()
 
         if layer != None:
-            #the clicked point is our starting point
-            startingPoint = QtCore.QPoint(x,y)
+            # the clicked point is our starting point
+            startingPoint = QtCore.QPoint(x, y)
             found = self.getFeatureForPoint(layer, startingPoint)
 
             if len(found) > 0:
@@ -929,7 +948,7 @@ class DtSelectVertexTool(DtMapToolEdit):
     '''select and mark numVertices vertices in the active layer'''
     vertexFound = QtCore.pyqtSignal(list)
 
-    def __init__(self, iface, numVertices = 1):
+    def __init__(self, iface, numVertices=1):
         super().__init__(iface)
 
         # desired number of marked vertex until signal
@@ -941,19 +960,19 @@ class DtSelectVertexTool(DtMapToolEdit):
         self.points = []
         self.fids = []
 
-    def canvasReleaseEvent(self,event):
-        if self.count < self.numVertices: #not yet enough
-            #Get the click
+    def canvasReleaseEvent(self, event):
+        if self.count < self.numVertices:  # not yet enough
+            # Get the click
             x = event.pos().x()
             y = event.pos().y()
 
             layer = self.canvas.currentLayer()
 
             if layer != None:
-                #the clicked point is our starting point
-                startingPoint = QtCore.QPoint(x,y)
+                # the clicked point is our starting point
+                startingPoint = QtCore.QPoint(x, y)
 
-                #we need a snapper, so we use the MapCanvas snapper
+                # we need a snapper, so we use the MapCanvas snapper
                 snapper = self.canvas.snappingUtils()
                 snapper.setCurrentLayer(layer)
 
@@ -961,33 +980,33 @@ class DtSelectVertexTool(DtMapToolEdit):
                 snapMatch = snapper.snapToCurrentLayer(startingPoint, QgsPointLocator.Vertex)
 
                 if not snapMatch.isValid():
-                    #warn about missing snapping tolerance if appropriate
+                    # warn about missing snapping tolerance if appropriate
                     dtutils.showSnapSettingsWarning(self.iface)
                 else:
-                    #mark the vertex
+                    # mark the vertex
                     p = snapMatch.point()
                     m = QgsVertexMarker(self.canvas)
                     m.setIconType(1)
 
                     if self.count == 0:
-                        m.setColor(QtGui.QColor(255,0,0))
+                        m.setColor(QtGui.QColor(255, 0, 0))
                     else:
                         m.setColor(QtGui.QColor(0, 0, 255))
 
                     m.setIconSize(12)
-                    m.setPenWidth (3)
+                    m.setPenWidth(3)
                     m.setCenter(p)
                     self.points.append(p)
                     self.markers.append(m)
-                    fid = snapMatch.featureId() # QgsFeatureId of the snapped geometry
+                    fid = snapMatch.featureId()  # QgsFeatureId of the snapped geometry
                     self.fids.append(fid)
                     self.count += 1
 
                     if self.count == self.numVertices:
-                        self.vertexFound.emit([self.points,  self.markers,  self.fids])
-                        #self.emit(SIGNAL("vertexFound(PyQt_PyObject)"), [self.points,  self.markers])
+                        self.vertexFound.emit([self.points, self.markers, self.fids])
+                        # self.emit(SIGNAL("vertexFound(PyQt_PyObject)"), [self.points,  self.markers])
 
-    def reset(self,  emitSignal = False):
+    def reset(self, emitSignal=False):
         for m in self.markers:
             self.canvas.scene().removeItem(m)
 
@@ -996,25 +1015,26 @@ class DtSelectVertexTool(DtMapToolEdit):
         self.fids = []
         self.count = 0
 
+
 class DtSelectSegmentTool(DtMapToolEdit):
     segmentFound = QtCore.pyqtSignal(list)
 
     def __init__(self, iface):
         super().__init__(iface)
-        self.rb1 = QgsRubberBand(self.canvas,  False)
+        self.rb1 = QgsRubberBand(self.canvas, False)
 
-    def canvasReleaseEvent(self,event):
-        #Get the click
+    def canvasReleaseEvent(self, event):
+        # Get the click
         x = event.pos().x()
         y = event.pos().y()
 
         layer = self.canvas.currentLayer()
 
         if layer != None:
-            #the clicked point is our starting point
-            startingPoint = QtCore.QPoint(x,y)
+            # the clicked point is our starting point
+            startingPoint = QtCore.QPoint(x, y)
 
-            #we need a snapper, so we use the MapCanvas snapper
+            # we need a snapper, so we use the MapCanvas snapper
             snapper = self.canvas.snappingUtils()
             snapper.setCurrentLayer(layer)
 
@@ -1023,37 +1043,38 @@ class DtSelectSegmentTool(DtMapToolEdit):
             snapMatch = snapper.snapToCurrentLayer(startingPoint, QgsPointLocator.Edge)
 
             if not snapMatch.isValid():
-                #warn about missing snapping tolerance if appropriate
+                # warn about missing snapping tolerance if appropriate
                 dtutils.showSnapSettingsWarning(self.iface)
             else:
-                #if we have found a linesegment
+                # if we have found a linesegment
                 edge = snapMatch.edgePoints()
                 p1 = edge[0]
                 p2 = edge[1]
                 # we like to mark the segment that is choosen, so we need a rubberband
                 self.rb1.reset()
-                color = QtGui.QColor(255,0,0)
+                color = QtGui.QColor(255, 0, 0)
                 self.rb1.setColor(color)
                 self.rb1.setWidth(2)
                 self.rb1.addPoint(p1)
                 self.rb1.addPoint(p2)
                 self.rb1.show()
-                self.segmentFound.emit([self.rb1.getPoint(0, 0),  self.rb1.getPoint(0, 1),  self.rb1])
+                self.segmentFound.emit([self.rb1.getPoint(0, 0), self.rb1.getPoint(0, 1), self.rb1])
 
-    def reset(self,  emitSignal = False):
+    def reset(self, emitSignal=False):
         self.rb1.reset()
+
 
 class DtSplitFeatureTool(QgsMapToolAdvancedDigitizing, DtTool):
     finishedDigitizing = QtCore.pyqtSignal(QgsGeometry)
 
     def __init__(self, iface):
-        super().__init__(canvas = iface.mapCanvas(), cadDockWidget = iface.cadDockWidget(),
-            iface = iface, geometryTypes = [])
+        super().__init__(canvas=iface.mapCanvas(), cadDockWidget=iface.cadDockWidget(),
+                         iface=iface, geometryTypes=[])
         self.marker = None
         self.rubberBand = None
         self.sketchRubberBand = self.createRubberBand()
         self.sketchRubberBand.setLineStyle(QtCore.Qt.DotLine)
-        self.rbPoints = [] # array to store points in rubber band because
+        self.rbPoints = []  # array to store points in rubber band because
         # api to access points does not work properly or I did not figure it out :)
         self.currentMousePosition = None
         self.snapPoint = None
@@ -1079,7 +1100,7 @@ class DtSplitFeatureTool(QgsMapToolAdvancedDigitizing, DtTool):
         if event.type() == QtCore.QEvent.KeyPress:
             if event.key() == QtCore.Qt.Key_Backspace:
                 if self.rubberBand != None:
-                    if self.rubberBand.numberOfVertices() >= 2: # QgsRubberBand has always 2 vertices
+                    if self.rubberBand.numberOfVertices() >= 2:  # QgsRubberBand has always 2 vertices
                         if self.currentMousePosition != None:
                             self.removeLastPoint()
                             self.redrawSketchRubberBand([self.toMapCoordinates(self.currentMousePosition)])
@@ -1104,14 +1125,13 @@ class DtSplitFeatureTool(QgsMapToolAdvancedDigitizing, DtTool):
 
     def removeLastPoint(self):
         ''' remove the last point in self.rubberBand'''
-        if len (self.rbPoints) > 1: #first point will not be removed
+        if len(self.rbPoints) > 1:  # first point will not be removed
             self.rbPoints.pop()
-            #we recreate rubberBand because it contains doubles
+            # we recreate rubberBand because it contains doubles
             self.rubberBand.reset()
 
             for aPoint in self.rbPoints:
                 self.rubberBand.addPoint(QgsPointXY(aPoint))
-
 
     def trySnap(self, event):
         self.removeSnapMarker()
@@ -1132,9 +1152,9 @@ class DtSplitFeatureTool(QgsMapToolAdvancedDigitizing, DtTool):
     def markSnap(self, thisPoint):
         self.marker = QgsVertexMarker(self.canvas)
         self.marker.setIconType(1)
-        self.marker.setColor(QtGui.QColor(255,0,0))
+        self.marker.setColor(QtGui.QColor(255, 0, 0))
         self.marker.setIconSize(12)
-        self.marker.setPenWidth (3)
+        self.marker.setPenWidth(3)
         self.marker.setCenter(thisPoint)
 
     def removeSnapMarker(self):
@@ -1162,40 +1182,38 @@ class DtSplitFeatureTool(QgsMapToolAdvancedDigitizing, DtTool):
     def redrawSketchRubberBand(self, points):
         if self.rubberBand != None and len(self.rbPoints) > 0:
             self.sketchRubberBand.reset()
-            sketchStartPoint = self.rbPoints[len(self.rbPoints) -1]
+            sketchStartPoint = self.rbPoints[len(self.rbPoints) - 1]
             self.sketchRubberBand.addPoint(QgsPointXY(sketchStartPoint))
 
             if len(points) == 1:
                 self.sketchRubberBand.addPoint(QgsPointXY(sketchStartPoint))
                 self.sketchRubberBand.movePoint(
-                    self.sketchRubberBand.numberOfVertices() -1, points[0])
-            #for p in range(self.rubberBand.size()):
+                    self.sketchRubberBand.numberOfVertices() - 1, points[0])
+            # for p in range(self.rubberBand.size()):
             #    self.debug("Part " + str(p))
             #    for v in range(self.rubberBand.partSize(p)):
             #        vertex = self.rubberBand.getPoint(0,j=v)
             #        self.debug("Vertex " + str(v) + " = "+ str(vertex.x()) + ", " + str(vertex.y()))
 
-
-
-            #startPoint = self.rubberBand.getPoint(0, self.rubberBand.partSize(0) -1)
-            #self.debug("StartPoint " + str(startPoint))
-            #self.sketchRubberBand.addPoint(startPoint)
-            #self.sketchRubberBand.addPoint(points[len(points) - 1])
+            # startPoint = self.rubberBand.getPoint(0, self.rubberBand.partSize(0) -1)
+            # self.debug("StartPoint " + str(startPoint))
+            # self.sketchRubberBand.addPoint(startPoint)
+            # self.sketchRubberBand.addPoint(points[len(points) - 1])
             else:
                 for aPoint in points:
                     self.sketchRubberBand.addPoint(aPoint)
 
     def cadCanvasMoveEvent(self, event):
         pass
-        #self.debug("cadCanvasMoveEvent")
+        # self.debug("cadCanvasMoveEvent")
 
     def cadCanvasPressEvent(self, event):
         pass
-        #self.debug("cadCanvasPressEvent")
+        # self.debug("cadCanvasPressEvent")
 
     def cadCanvasReleaseEvent(self, event):
         pass
-        #self.debug("cadCanvasReleaseEvent")
+        # self.debug("cadCanvasReleaseEvent")
 
     def canvasMoveEvent(self, event):
         self.snapPoint = None
@@ -1204,17 +1222,17 @@ class DtSplitFeatureTool(QgsMapToolAdvancedDigitizing, DtTool):
 
         if self.rubberBand != None:
             if hasSnap:
-                #if self.canvas.snappingUtils().config().enabled(): # is snapping active?
+                # if self.canvas.snappingUtils().config().enabled(): # is snapping active?
                 tracer = QgsMapCanvasTracer.tracerForCanvas(self.canvas)
 
-                if tracer.actionEnableTracing().isChecked(): # tracing is pressed in
+                if tracer.actionEnableTracing().isChecked():  # tracing is pressed in
                     tracer.configure()
-                    #startPoint = self.rubberBand.getPoint(0, self.rubberBand.numberOfVertices() -1)
-                    startPoint = self.rbPoints[len(self.rbPoints) -1]
-                    pathPoints,  pathError = tracer.findShortestPath(QgsPointXY(startPoint), self.snapPoint)
+                    # startPoint = self.rubberBand.getPoint(0, self.rubberBand.numberOfVertices() -1)
+                    startPoint = self.rbPoints[len(self.rbPoints) - 1]
+                    pathPoints, pathError = tracer.findShortestPath(QgsPointXY(startPoint), self.snapPoint)
 
-                    if pathError == 0: #ErrNone
-                        pathPoints.pop(0) # remove first point as it is identical with starPoint
+                    if pathError == 0:  # ErrNone
+                        pathPoints.pop(0)  # remove first point as it is identical with starPoint
                         self.redrawSketchRubberBand(pathPoints)
                     else:
                         self.redrawSketchRubberBand([self.snapPoint])
@@ -1230,17 +1248,17 @@ class DtSplitFeatureTool(QgsMapToolAdvancedDigitizing, DtTool):
 
         if layer != None:
             thisPoint = self.eventToQPoint(event)
-            #QgsMapToPixel instance
+            # QgsMapToPixel instance
 
             if event.button() == QtCore.Qt.LeftButton:
                 if self.rubberBand == None:
                     if self.snapPoint == None:
                         self.initRubberBand(self.toMapCoordinates(thisPoint))
-                    else: # last mouse move created a snap
+                    else:  # last mouse move created a snap
                         self.initRubberBand(self.snapPoint)
                         self.snapPoint = None
                         self.removeSnapMarker()
-                else: # merge sketchRubberBand into rubberBand
+                else:  # merge sketchRubberBand into rubberBand
                     sketchGeom = self.sketchRubberBand.asGeometry()
                     verticesSketchGeom = sketchGeom.vertices()
                     self.rubberBand.addGeometry(sketchGeom)
@@ -1258,7 +1276,7 @@ class DtSplitFeatureTool(QgsMapToolAdvancedDigitizing, DtTool):
                     if self.snapPoint != None:
                         self.snapPoint = None
                         self.removeSnapMarker()
-            else: # right click
+            else:  # right click
                 if self.rubberBand.numberOfVertices() > 1:
                     rbGeom = self.rubberBand.asGeometry()
                     self.finishedDigitizing.emit(rbGeom)
@@ -1266,7 +1284,7 @@ class DtSplitFeatureTool(QgsMapToolAdvancedDigitizing, DtTool):
                 self.clear()
                 self.canvas.refresh()
 
-    def keyPressEvent(self,  event):
+    def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
             self.clear()
 

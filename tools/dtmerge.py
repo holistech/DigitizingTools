@@ -3,6 +3,8 @@
 dtmerge
 `````````````
 """
+import datetime
+
 """
 Part of DigitizingTools, a QGIS plugin that
 subsumes different tools neded during digitizing sessions
@@ -26,20 +28,29 @@ import dt_icons_rc
 from dttools import DtSingleButton
 from dtToolsDialog import DigitizingToolsChooseRemaining
 
+
 class DtMerge(DtSingleButton):
     '''Merge selected features of active layer'''
+
     def __init__(self, iface, toolBar):
-        super().__init__(iface,  toolBar,
-            QtGui.QIcon(":/Merge.png"),
-            QtCore.QCoreApplication.translate("digitizingtools",
-                "Merge selected features"),
-            geometryTypes = [1, 2, 3, 4, 5, 6],  dtName = "dtMerge")
+        super().__init__(iface, toolBar,
+                         QtGui.QIcon(":/Merge.png"),
+                         QtCore.QCoreApplication.translate("digitizingtools",
+                                                           "Merge selected features"),
+                         geometryTypes=[1, 2, 3, 4, 5, 6], dtName="dtMerge")
         self.enable()
 
     def process(self):
         '''Function that does all the real work'''
         title = QtCore.QCoreApplication.translate("digitizingtools", "Merge")
         processLayer = self.iface.activeLayer()
+
+        # First commit all changes to the layer
+        # TODO: Check for commit errors and perform a rollback, inform the user
+        processLayer.commitChanges()
+        processLayer = self.iface.activeLayer()
+        processLayer.startEditing()
+
         pkAtts = processLayer.primaryKeyAttributes()
 
         if len(pkAtts) == 1:
@@ -55,7 +66,7 @@ class DtMerge(DtSingleButton):
             aFid = aFeat.id()
             featDict[aFid] = aFeat
 
-            if aFid >= 0: # only already existing features
+            if aFid >= 0:  # only already existing features
                 if pkFld == None:
                     pkValues["Feature ID " + str(aFid)] = aFid
                 else:
@@ -71,19 +82,19 @@ class DtMerge(DtSingleButton):
         elif len(pkValues) == 1:
             doContinue = 1
             pkValueToKeep = list(pkValues.keys())[0]
-        else: # all new features
+        else:  # all new features
             doContinue = 1
             pkValueToKeep = None
 
         if doContinue == 1:
             processLayer.beginEditCommand(
                 QtCore.QCoreApplication.translate("editcommand",
-                "Merge Features"))
+                                                  "Merge Features"))
 
             if pkValueToKeep != None:
                 outFeat = featDict.pop(pkValues[pkValueToKeep])
             else:
-                outFeat = featDict.popitem()[1] # use any
+                outFeat = featDict.popitem()[1]  # use any
 
             outFid = outFeat.id()
             outGeom = QgsGeometry(outFeat.geometry())
@@ -94,12 +105,17 @@ class DtMerge(DtSingleButton):
 
             if not self.geometryTypeMatchesLayer(processLayer, outGeom):
                 self.iface.messageBar().pushCritical("DigitizingTools",
-                    QtWidgets.QApplication.translate("DigitizingTools",
-                    "The geometry type of the result is not valid in this layer!"))
+                                                     QtWidgets.QApplication.translate("DigitizingTools",
+                                                                                      "The geometry type of the result is not valid in this layer!"))
                 processLayer.destroyEditCommand()
             else:
                 processLayer.removeSelection()
-                success = processLayer.changeGeometry(outFid, outGeom)
+                idList = ",".join([str(key) for key in featDict.keys()])
+                outFeat.setGeometry(outGeom)
+                outFeat["sm_predecessors"] = idList
+                outFeat["sm_type"] = 2
+                outFeat["sm_date"] = datetime.datetime.now()
+                success = processLayer.updateFeature(outFeat)
 
                 for aFid in fidsToDelete:
                     if not processLayer.deleteFeature(aFid):
@@ -110,17 +126,15 @@ class DtMerge(DtSingleButton):
 
     def enable(self):
         '''Enables/disables the corresponding button.'''
-        DtSingleButton.enable(self) # call parent's method
+        DtSingleButton.enable(self)  # call parent's method
 
         if self.act.isEnabled():
             layer = self.iface.activeLayer()
             try:
-                layer.selectionChanged.disconnect(self.enable) # disconnect, will be reconnected
+                layer.selectionChanged.disconnect(self.enable)  # disconnect, will be reconnected
             except:
                 pass
 
             doEnable = layer.selectedFeatureCount() > 1
             self.act.setEnabled(doEnable)
             layer.selectionChanged.connect(self.enable)
-
-
